@@ -17,8 +17,11 @@ import org.springframework.context.annotation.PropertySource;
 import org.springframework.context.annotation.PropertySources;
 import org.springframework.core.task.SimpleAsyncTaskExecutor;
 import org.springframework.format.FormatterRegistry;
+import org.springframework.jdbc.datasource.DataSourceTransactionManager;
+import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.transaction.annotation.EnableTransactionManagement;
 import org.springframework.web.servlet.ViewResolver;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
@@ -30,11 +33,14 @@ import com.epam.spring.converter.ParticipantRoleConverter;
 import com.epam.spring.converter.ParticipantStatusConverter;
 import com.epam.spring.converter.UserConverter;
 
+import javax.sql.DataSource;
+
 @SpringBootApplication
 @EnableAutoConfiguration
 @ComponentScan(basePackages = "com.epam.spring.*")
 @PropertySources({ @PropertySource("classpath:app.properties"), @PropertySource("classpath:messages.properties") })
 @EnableAsync
+@EnableTransactionManagement
 @EnableScheduling
 @EnableAspectJAutoProxy
 @EntityScan(basePackages = { "com.epam.spring.model" })
@@ -43,6 +49,21 @@ public class WebConfig extends WebMvcConfigurerAdapter {
 
 	@Value("${dateFormat}")
 	private String dateFormat;
+
+	@Value("${db.host}")
+	private String dbHost;
+
+	@Value("${db.name}")
+	private String dbName;
+
+	@Value("${db.port}")
+	private String port;
+
+	@Value("${db.username}")
+	private String username;
+
+	@Value("${db.password}")
+	private String password;
 
 	@Autowired
 	private ApplicationContext context;
@@ -78,6 +99,22 @@ public class WebConfig extends WebMvcConfigurerAdapter {
 		viewResolver.setSuffix(".jsp");
 		return viewResolver;
 	}
+	@Bean
+	public DataSource dataSource() {
+		DriverManagerDataSource dataSource = new DriverManagerDataSource();
+		dataSource.setDriverClassName("com.mysql.jdbc.Driver");
+		dataSource.setUrl(
+				"jdbc:mysql://" + dbHost + ":" + port + "/" + dbName + "?autoReconnect=true&useSSL=false&create=true");
+		dataSource.setUsername(username);
+		dataSource.setPassword(password);
+		return dataSource;
+	}
+
+	@Bean
+	public DataSourceTransactionManager getTransactionManager() {
+		return new DataSourceTransactionManager(dataSource());
+	}
+
 
 	@Bean
 	public EmbeddedServletContainerFactory servletContainer() {
